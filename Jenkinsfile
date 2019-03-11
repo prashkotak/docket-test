@@ -6,7 +6,11 @@ pipeline {
                 echo 'Running build automation'
             }
         }
-        steps {
+		stage('DeployToStaging') {
+            when {
+                branch 'master'
+            }
+			steps {
                 withCredentials([usernamePassword(credentialsId: 'webserver', usernameVariable: 'USERNAME', passwordVariable: 'USERPASS')]) {
                     sshPublisher(
                         failOnError: true,
@@ -32,4 +36,5 @@ pipeline {
                 }
             }
         }
+	}    
 }

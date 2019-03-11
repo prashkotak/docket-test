@@ -6,18 +6,30 @@ pipeline {
                 echo 'Running build automation'
             }
         }
-         stage('Build Docker Image') {
-            when {
-                branch 'master'
-            }
-            steps {
-                script {
-                    app = docker.build("httpd")
-                    app.inside {
-                        sh 'docker run -dit --name my-apache-app -p 9090:80 -v "$PWD":/usr/local/apache2/htdocs/ httpd:2.4'
-                    }
+        steps {
+                withCredentials([usernamePassword(credentialsId: 'webserver', usernameVariable: 'USERNAME', passwordVariable: 'USERPASS')]) {
+                    sshPublisher(
+                        failOnError: true,
+                        continueOnError: false,
+                        publishers: [
+                            sshPublisherDesc(
+                                configName: 'master',
+                                sshCredentials: [
+                                    username: "$USERNAME",
+                                    encryptedPassphrase: "$USERPASS"
+                                ], 
+                                transfers: [
+                                    sshTransfer(
+                                        sourceFiles: 'tmp/trainSchedule.zip',
+                                        removePrefix: 'tmp/',
+                                        remoteDirectory: '/tmp',
+                                        execCommand: 'docker pull httpd'
+                                    )
+                                ]
+                            )
+                        ]
+                    )
                 }
             }
         }
-	}
-}	
+}

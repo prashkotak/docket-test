@@ -4,6 +4,7 @@
         stage('Build') {
             steps {
                 echo 'Running build automation'
+		sh 'ifconfig'    
             }
         }
          stage('Build Docker Image') {

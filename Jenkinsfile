@@ -6,67 +6,20 @@ pipeline {
                 echo 'Running build automation'
             }
         }
-        stage('DeployToStaging') {
+         stage('Build Docker Image') {
             when {
                 branch 'master'
             }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'webserver', usernameVariable: 'USERNAME', passwordVariable: 'USERPASS')]) {
-                    sshPublisher(
-                        failOnError: true,
-                        continueOnError: false,
-                        publishers: [
-                            sshPublisherDesc(
-                                configName: 'staging',
-                                sshCredentials: [
-                                    username: "$USERNAME",
-                                    encryptedPassphrase: "$USERPASS"
-                                ], 
-                                transfers: [
-                                    sshTransfer(
-                                        sourceFiles: 'tmp/trainSchedule.zip',
-                                        removePrefix: 'tmp/',
-                                        remoteDirectory: '/tmp',
-                                        execCommand: 'sudo touch /tmp/krinag'
-                                    )
-                                ]
-                            )
-                        ]
-                    )
+                script {
+                    app = docker.build("httpd")
+                    app.inside {
+                        sh 'docker run -dit --name my-apache-app -p 9090:80 -v "$PWD":/usr/local/apache2/htdocs/ httpd:2.4'
+                    }
                 }
             }
         }
-        stage('DeployToProduction') {
-            when {
-                branch 'master'
-            }
-            steps {
-                input 'Does the staging environment look OK?'
-                milestone(1)
-                withCredentials([usernamePassword(credentialsId: 'webserver', usernameVariable: 'USERNAME', passwordVariable: 'USERPASS')]) {
-                    sshPublisher(
-                        failOnError: true,
-                        continueOnError: false,
-                        publishers: [
-                            sshPublisherDesc(
-                                configName: 'production',
-                                sshCredentials: [
-                                    username: "$USERNAME",
-                                    encryptedPassphrase: "$USERPASS"
-                                ], 
-                                transfers: [
-                                    sshTransfer(
-                                        sourceFiles: 'tmp/trainSchedule.zip',
-                                        removePrefix: 'tmp/',
-                                        remoteDirectory: '/tmp',
-                                        execCommand: 'sudo touch /tmp/krinag'
-                                    )
-                                ]
-                            )
-                        ]
-                    )
-                }
-            }
-        }
-    }
-}
+        
+        
+    
+      
